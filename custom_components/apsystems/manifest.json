@@ -4,5 +4,6 @@
   "documentation": "https://github.com/bgbraga/homeassistant-apsystems/blob/master/README.md",
   "dependencies": [],
   "codeowners": ["@bgbraga"],
-  "requirements": []
+  "requirements": [],
+  "version": "0.0.1"
 }
