@@ -28,7 +28,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     ip_address = config[CONF_IP_ADDRESS]
 
     sensor = ApsystemsSensor(name, ip_address)
-    async_add_entities(sensor, True)
+    async_add_entities([sensor])
 
 
 class ApsystemsSensor(Entity):
