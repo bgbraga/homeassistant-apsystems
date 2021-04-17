@@ -1,7 +1,7 @@
 {
-  "domain": "apsystems_inverter",
+  "domain": "apsystems",
   "name": "APsystems",
-  "documentation": "https://github.com/safepay/sensor.fronius/blob/master/README.md",
+  "documentation": "https://github.com/bgbraga/homeassistant-apsystems/blob/master/README.md",
   "dependencies": [],
   "codeowners": ["@bgbraga"],
   "requirements": []

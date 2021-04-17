@@ -11,5 +11,5 @@ This component simplifies the integration of a APsystems inverter:
 ```
 sensor:
 - platform: apsystems
-    ip_address: LOCAL_IP_FOR_FRONIUS
+    ip_address: LOCAL_IP_FOR_APSYSTEMS
 ```
