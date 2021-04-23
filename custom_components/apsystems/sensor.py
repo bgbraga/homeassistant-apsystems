@@ -7,28 +7,45 @@ from homeassistant.util.dt import utcnow as dt_utcnow, as_local
 import voluptuous as vol
 import pprint
 import requests
+import asyncio
 from requests.adapters import HTTPAdapter
 from datetime import datetime, timedelta, date
+import time
 
 CONF_USERNAME = 'username'
 CONF_PASSWORD = 'password'
-CONF_ECU_ID = 'ecuId'
 CONF_SYSTEM_ID = 'systemId'
 CONF_NAME = 'name'
-POWER_UNIT = "kWh"
+
+SENSOR_ENERGY_TOTAL = 'energy_total'
+SENSOR_ENERGY_LATEST = 'energy_latest'
+SENSOR_POWER_MAX = 'power_max'
+SENSOR_POWER_LATEST = 'power_latest'
+SENSOR_TIME = 'time'
+
+EXTRA_TIMESTAMP = 'timestamp'
+
+from homeassistant.const import (
+    CONF_NAME, SUN_EVENT_SUNRISE, SUN_EVENT_SUNSET, STATE_UNAVAILABLE, ENERGY_KILO_WATT_HOUR, POWER_WATT, TIME_MILLISECONDS
+    )
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_USERNAME): cv.string,
     vol.Required(CONF_PASSWORD): cv.string,
-    vol.Required(CONF_ECU_ID): cv.string,
     vol.Required(CONF_SYSTEM_ID): cv.string,
     vol.Optional(CONF_NAME, default='APsystems'): cv.string
 })
-from homeassistant.const import (
-    CONF_MONITORED_CONDITIONS, CONF_NAME, CONF_SCAN_INTERVAL, ATTR_ATTRIBUTION, SUN_EVENT_SUNRISE, SUN_EVENT_SUNSET
-    )
 
-SCAN_INTERVAL = timedelta(seconds=300)
+# Key: ['json_key', 'unit', 'icon']
+SENSORS = {
+    SENSOR_ENERGY_TOTAL:  ['total', ENERGY_KILO_WATT_HOUR, 'mdi:solar-power'],
+    SENSOR_ENERGY_LATEST: ['energy', ENERGY_KILO_WATT_HOUR, 'mdi:solar-power'],
+    SENSOR_POWER_MAX:     ['max', POWER_WATT, 'mdi:solar-power'],
+    SENSOR_POWER_LATEST:  ['power', POWER_WATT, 'mdi:solar-power'],
+    SENSOR_TIME:  ['time', TIME_MILLISECONDS, 'mdi:clock-outline']
+}
+
+SCAN_INTERVAL = timedelta(minutes=5)
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -36,24 +53,33 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     sensor_name = config.get(CONF_NAME)
     username = config[CONF_USERNAME]
     password = config[CONF_PASSWORD]
-    ecu_id = config[CONF_ECU_ID]
     system_id = config[CONF_SYSTEM_ID]
 
-    sensor = ApsystemsSensor(sensor_name, username, password, ecu_id, system_id)
-    async_add_entities([sensor])
+    #data fetcher
+    fetcher = APsystemsFetcher(username, password, system_id)
 
+    sensors = []
+    for type in SENSORS:
+        metadata = SENSORS[type]
+
+        sensor = ApsystemsSensor(sensor_name, username, password, system_id, fetcher, metadata)
+        sensors.append(sensor)
+
+    async_add_entities(sensors)
 
 class ApsystemsSensor(Entity):
     """Representation of a Sensor."""
 
-    def __init__(self, sensor_name, username, password, ecu_id, system_id):
+    def __init__(self, sensor_name, username, password, system_id, fetcher, metadata):
         """Initialize the sensor."""
         self._state = None
         self._name = sensor_name
         self._username = username
         self._password = password
-        self._ecu_id = ecu_id
         self._system_id = system_id
+        self._fetcher = fetcher
+        self._metadata = metadata
+        self._attributes = {}
 
     @property
     def name(self):
@@ -66,15 +92,25 @@ class ApsystemsSensor(Entity):
         return self._state
 
     @property
-    def unit_of_measurement(self):
-        """Return the unit of measurement."""
-        return POWER_UNIT
+    def state_attributes(self):
+        """Return the device state attributes."""
+        return self._attributes
 
     @property
-    def available(self, utcnow=None):
-        if utcnow is None:
-            utcnow = dt_utcnow()
-        now = as_local(utcnow)
+    def unit_of_measurement(self):
+        """Return the unit of measurement."""
+        return self._metadata[1]
+
+    @property
+    def icon(self):
+        """Icon to use in the frontend, if any."""
+        return self._metadata[2]
+
+    @property
+    def available(self, utc_now=None):
+        if utc_now is None:
+            utc_now = dt_utcnow()
+        now = as_local(utc_now)
 
         start_time = self.find_start_time(now)
         stop_time = self.find_stop_time(now)
@@ -83,15 +119,36 @@ class ApsystemsSensor(Entity):
 
         return True
 
-    def update(self):
+    async def async_update(self):
         """Fetch new state data for the sensor.
         This is the only method that should fetch new data for Home Assistant.
         """
-        fetcher = APsystemsFetcher(self._username, self._password, self._ecu_id, self._system_id)
-        data = fetcher.data()
-        _LOGGER.debug(pprint.pformat(data))
+        ap_data = self._fetcher.data()
+        _LOGGER.debug(pprint.pformat(ap_data))
 
-        self._state = 23
+        # state is not available
+        if ap_data is None:
+            self._state = STATE_UNAVAILABLE
+            return
+
+        index = self._metadata[0]
+        value = ap_data[index]
+        if isinstance(value, list):
+            value = value[-1]
+
+        eleven_hours = 11 * 60 * 60 * 1000  # to move apsystems timestamp to UTC
+
+        #get timestamp
+        timestamp = ap_data[SENSOR_TIME][-1]
+
+        if value == timestamp:  # current attribute is the timestamp, so fix it
+            value = int(value) + eleven_hours
+        timestamp = int(timestamp) + eleven_hours
+
+        self._attributes[EXTRA_TIMESTAMP] = timestamp
+
+        _LOGGER.debug(value)
+        self._state = value
 
     def find_start_time(self, now):
         """Return sunrise or start_time if given."""
@@ -106,16 +163,16 @@ class ApsystemsSensor(Entity):
 
 class APsystemsFetcher:
     url_login = "https://apsystemsema.com/ema/loginEMA.action"
-    #url_profile = "https://ema.api.apsystemsema.com:9223/aps-api-web/api/view/registration/user/getUserInfoWithSystemInfo"
-    url_info = "https://apsystemsema.com/ema/ajax/getDownLoadReportApiAjax/getHourlyEnergyOnCurrentDayAjax"
+    url_data = "https://apsystemsema.com/ema/ajax/getReportApiAjax/getPowerOnCurrentDayAjax"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:52.0) Gecko/20100101 Firefox/52.0'}
+    cache = None
+    running = False
 
-    def __init__(self, username, password, ecu_id, system_id):
+    def __init__(self, username, password, system_id):
         self._username = username
         self._password = password
-        self._ecu_id = ecu_id
         self._system_id = system_id
-        self.today = datetime.fromisoformat(date.today().isoformat())
+        self._today = datetime.fromisoformat(date.today().isoformat())
 
     def login(self):
         params = {'today': datetime.today().strftime("%Y-%m-%d+%H:%M:%S"),
@@ -130,14 +187,40 @@ class APsystemsFetcher:
 
         return session
 
-    def data(self):
-        session = self.login()
+    def run(self):
+        self.running = True
+        try:
+            session = self.login()
 
-        params = {'queryDate': datetime.today().strftime("%Y%m%d"),
-                  'ecuId':  self._ecu_id,
-                  'userId':  self._system_id,
-                  'systemId': self._system_id}
+            params = {'queryDate': datetime.today().strftime("%Y%m%d"),
+                      'selectedValue': '216000045871',
+                      'systemId': self._system_id}
 
-        result_data = session.request("POST", self.url_info, data=params, headers=self.headers)
+            agora = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+            print('vai rodar: ' + agora)
+            result_data = session.request("POST", self.url_data, data=params, headers=self.headers)
 
-        return result_data.json()
+            if result_data.status_code == 204:
+                self.cache = None
+            else:
+                self.cache = result_data.json()
+        finally:
+            self.running = False
+
+    async def data(self):
+        while self.running is True:
+            await asyncio.sleep(1)
+
+        if self.cache is None:
+            self.run()
+
+        # rules to check cache
+        eleven_hours = 11 * 60 * 60 * 1000
+        timestamp_event = int(self.cache['time'][-1]) + eleven_hours  # apsystems have 8h delayed in timestamp from UTC
+        timestamp_now = int(round(time.time() * 1000))
+        cache_time = 6 * 60 * 1000  # 6 minutes
+
+        if timestamp_now - timestamp_event > cache_time:
+            self.run()
+
+        return self.cache
