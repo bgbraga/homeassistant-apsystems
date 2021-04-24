@@ -176,7 +176,7 @@ class APsystemsFetcher:
         self._today = datetime.fromisoformat(date.today().isoformat())
 
     async def login(self):
-        params = {'today': datetime.today().strftime("%Y-%m-%d+%H:%M:%S"),
+        post_data = {'today': datetime.today().strftime("%Y-%m-%d+%H:%M:%S"),
                   'username':	self._username,
                   'password':	self._password}
 
@@ -184,7 +184,7 @@ class APsystemsFetcher:
         session.mount('https://', HTTPAdapter())
 
         result_login = await self._hass.async_add_executor_job(
-            session.request, "POST", self.url_login, params, None, self.headers
+            session.request, "POST", self.url_login, None, post_data, self.headers
         )
 
         _LOGGER.debug("status code login: " + str(result_login.status_code))
@@ -196,16 +196,16 @@ class APsystemsFetcher:
         try:
             session = await self.login()
 
-            params = {'queryDate': datetime.today().strftime("%Y%m%d"),
+            post_data = {'queryDate': datetime.today().strftime("%Y%m%d"),
                       'selectedValue': '216000045871',
                       'systemId': self._system_id}
 
-            _LOGGER.debug(params)
+            _LOGGER.debug(post_data)
 
             agora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             _LOGGER.debug('vai rodar: ' + agora)
             result_data = await self._hass.async_add_executor_job(
-                session.request, "POST", self.url_data, params, None, self.headers
+                session.request, "POST", self.url_data, None, post_data, self.headers
             )
 
             _LOGGER.debug("status code data: " + str(result_data.status_code))
