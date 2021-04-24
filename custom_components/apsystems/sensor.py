@@ -56,7 +56,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     system_id = config[CONF_SYSTEM_ID]
 
     #data fetcher
-    fetcher = APsystemsFetcher(username, password, system_id)
+    fetcher = APsystemsFetcher(hass, username, password, system_id)
 
     sensors = []
     for type in SENSORS:
@@ -168,7 +168,8 @@ class APsystemsFetcher:
     cache = None
     running = False
 
-    def __init__(self, username, password, system_id):
+    def __init__(self, hass, username, password, system_id):
+        self._hass = hass
         self._username = username
         self._password = password
         self._system_id = system_id
@@ -182,8 +183,9 @@ class APsystemsFetcher:
         session = requests.session()
         session.mount('https://', HTTPAdapter())
 
-        # should be call twice to correctly display
-        session.request("POST", self.url_login, data=params, headers=self.headers)
+        await self._hass.async_add_executor_job(
+            session.request("POST", self.url_login, data=params, headers=self.headers)
+        )
 
         return session
 
