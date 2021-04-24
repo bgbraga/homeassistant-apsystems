@@ -125,6 +125,10 @@ class ApsystemsSensor(Entity):
         """Fetch new state data for the sensor.
         This is the only method that should fetch new data for Home Assistant.
         """
+        if not self.available:
+            self._state = STATE_UNAVAILABLE
+            return
+
         ap_data = await self._fetcher.data()
 
         # state is not available
