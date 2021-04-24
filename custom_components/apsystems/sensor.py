@@ -16,8 +16,9 @@ CONF_PASSWORD = 'password'
 CONF_SYSTEM_ID = 'systemId'
 CONF_NAME = 'name'
 
-SENSOR_ENERGY_TOTAL = 'energy_total'
+SENSOR_ENERGY_DAY = 'energy_day'
 SENSOR_ENERGY_LATEST = 'energy_latest'
+SENSOR_ENERGY_TOTAL = 'energy_total'
 SENSOR_POWER_MAX = 'power_max'
 SENSOR_POWER_LATEST = 'power_latest'
 SENSOR_TIME = 'date'
@@ -37,11 +38,11 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 # Key: ['json_key', 'unit', 'icon']
 SENSORS = {
-    SENSOR_ENERGY_TOTAL:  ['total', ENERGY_KILO_WATT_HOUR, 'mdi:solar-power'],
+    SENSOR_ENERGY_DAY:  ['day', ENERGY_KILO_WATT_HOUR, 'mdi:solar-power'],
     SENSOR_ENERGY_LATEST: ['energy', ENERGY_KILO_WATT_HOUR, 'mdi:solar-power'],
     SENSOR_POWER_MAX:     ['max', POWER_WATT, 'mdi:solar-power'],
     SENSOR_POWER_LATEST:  ['power', POWER_WATT, 'mdi:solar-power'],
-    SENSOR_TIME:  ['time', TIME_MILLISECONDS, 'mdi:clock-outline']
+    SENSOR_TIME:  ['time', "", 'mdi:clock-outline']
 }
 
 SCAN_INTERVAL = timedelta(minutes=5)
@@ -59,7 +60,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     sensors = []
     for type in SENSORS:
         metadata = SENSORS[type]
-        sensor_name = "sensor." + config.get(CONF_NAME).lower() + "_" + type
+        sensor_name = config.get(CONF_NAME).lower() + "_" + type
         sensor = ApsystemsSensor(sensor_name, username, password, system_id, fetcher, metadata)
         sensors.append(sensor)
 
@@ -198,8 +199,6 @@ class APsystemsFetcher:
             post_data = {'queryDate': datetime.today().strftime("%Y%m%d"),
                       'selectedValue': '216000045871',
                       'systemId': self._system_id}
-
-            _LOGGER.debug(post_data)
 
             agora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             _LOGGER.debug('vai rodar: ' + agora)

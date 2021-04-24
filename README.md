@@ -11,6 +11,7 @@ This component simplifies the integration of a APsystems inverter:
 
 ### URL's Utilised
 The URL called is ``https://apsystemsema.com/ema/ajax/getReportApiAjax/getPowerOnCurrentDayAjax``
+It is only called from sunset to sunrise and the sensor going offline at night
 
 ### Installation
 Use [HACS](https://custom-components.github.io/hacs/) to point to this github URL:
