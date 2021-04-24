@@ -5,7 +5,6 @@ from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.helpers.sun import get_astral_event_date
 from homeassistant.util.dt import utcnow as dt_utcnow, as_local
 import voluptuous as vol
-import pprint
 import requests
 import asyncio
 from requests.adapters import HTTPAdapter
@@ -21,7 +20,7 @@ SENSOR_ENERGY_TOTAL = 'energy_total'
 SENSOR_ENERGY_LATEST = 'energy_latest'
 SENSOR_POWER_MAX = 'power_max'
 SENSOR_POWER_LATEST = 'power_latest'
-SENSOR_TIME = 'time'
+SENSOR_TIME = 'date'
 
 EXTRA_TIMESTAMP = 'timestamp'
 
@@ -50,7 +49,6 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
-    sensor_name = config.get(CONF_NAME)
     username = config[CONF_USERNAME]
     password = config[CONF_PASSWORD]
     system_id = config[CONF_SYSTEM_ID]
@@ -61,6 +59,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     sensors = []
     for type in SENSORS:
         metadata = SENSORS[type]
+        sensor_name = "sensor." + config.get(CONF_NAME).lower() + "_" + type
 
         sensor = ApsystemsSensor(sensor_name, username, password, system_id, fetcher, metadata)
         sensors.append(sensor)
@@ -142,6 +141,7 @@ class ApsystemsSensor(Entity):
 
         if value == timestamp:  # current attribute is the timestamp, so fix it
             value = int(value) + eleven_hours
+            value = datetime.datetime.fromtimestamp(value / 1000)
         timestamp = int(timestamp) + eleven_hours
 
         self._attributes[EXTRA_TIMESTAMP] = timestamp
