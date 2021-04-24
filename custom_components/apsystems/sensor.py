@@ -123,7 +123,7 @@ class ApsystemsSensor(Entity):
         """Fetch new state data for the sensor.
         This is the only method that should fetch new data for Home Assistant.
         """
-        ap_data = self._fetcher.data()
+        ap_data = await self._fetcher.data()
         _LOGGER.debug(pprint.pformat(ap_data))
 
         # state is not available
