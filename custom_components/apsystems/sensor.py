@@ -115,7 +115,7 @@ class ApsystemsSensor(Entity):
         start_time = self.find_start_time(now)
         stop_time = self.find_stop_time(now)
 
-        _LOGGER.debug("!!! Start Time, Stop Time, Name: {}, {}, {}".format(as_local(start_time), as_local(stop_time), self._name))
+        _LOGGER.debug("Scheduled Start Time / Stop Time / Name: {}, {}, {}".format(as_local(start_time), as_local(stop_time), self._name))
 
         return True
 
@@ -209,6 +209,10 @@ class APsystemsFetcher:
             )
 
             _LOGGER.debug("status code data: " + str(result_data.status_code))
+
+            _LOGGER.debug(result_data.request.url)
+            _LOGGER.debug(result_data.request.body)
+            _LOGGER.debug(result_data.request.headers)
 
             if result_data.status_code == 204:
                 self.cache = None
