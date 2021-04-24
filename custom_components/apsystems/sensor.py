@@ -183,16 +183,18 @@ class APsystemsFetcher:
         session = requests.session()
         session.mount('https://', HTTPAdapter())
 
-        await self._hass.async_add_executor_job(
+        result_login = await self._hass.async_add_executor_job(
             session.request, "POST", self.url_login, data=params, headers=self.headers
         )
+
+        _LOGGER.debug("status code login: " + str(result_login.status_code))
 
         return session
 
     async def run(self):
         self.running = True
         try:
-            session = self.login()
+            session = await self.login()
 
             params = {'queryDate': datetime.today().strftime("%Y%m%d"),
                       'selectedValue': '216000045871',
@@ -202,7 +204,7 @@ class APsystemsFetcher:
             _LOGGER.debug('vai rodar: ' + agora)
             result_data = session.request("POST", self.url_data, data=params, headers=self.headers)
 
-            _LOGGER.debug(result_data.status_code)
+            _LOGGER.debug("status code data: " + str(result_data.status_code))
             _LOGGER.debug(result_data.json())
 
             if result_data.status_code == 204:
