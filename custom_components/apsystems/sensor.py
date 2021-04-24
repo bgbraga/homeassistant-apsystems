@@ -124,7 +124,7 @@ class ApsystemsSensor(Entity):
         This is the only method that should fetch new data for Home Assistant.
         """
         ap_data = await self._fetcher.data()
-        _LOGGER.debug(pprint.pformat(ap_data))
+        _LOGGER.debug("Data: "+pprint.pformat(ap_data))
 
         # state is not available
         if ap_data is None:
@@ -202,7 +202,9 @@ class APsystemsFetcher:
 
             agora = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
             _LOGGER.debug('vai rodar: ' + agora)
-            result_data = session.request("POST", self.url_data, data=params, headers=self.headers)
+            result_data = await self._hass.async_add_executor_job(
+                session.request, "POST", self.url_data, data=params, headers=self.headers
+            )
 
             _LOGGER.debug("status code data: " + str(result_data.status_code))
             _LOGGER.debug(result_data.json())
@@ -219,7 +221,7 @@ class APsystemsFetcher:
             await asyncio.sleep(1)
 
         if self.cache is None:
-            self.run()
+            await self.run()
 
         # continue None after run(), there is no data for this day
         if self.cache is None:
@@ -232,6 +234,6 @@ class APsystemsFetcher:
         cache_time = 6 * 60 * 1000  # 6 minutes
 
         if timestamp_now - timestamp_event > cache_time:
-            self.run()
+            await self.run()
 
         return self.cache
