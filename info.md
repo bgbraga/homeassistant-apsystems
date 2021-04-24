@@ -7,7 +7,7 @@ This component simplifies the integration of a APsystems inverter:
 * extract data from apsystemsema.com web portal instead of hack the ECU connection
 * supports any kind of ASsystems inverter or ECU
 * pauses from sunset to sunrise to handle inverter logging going offline at night
-* have a cache system to avoid all sensors request the same data to apsystemsema.com
+* have a cache system to avoid individual sensors request the same data to apsystemsema.com
 
 ### Minimal Configuration
 ```yaml

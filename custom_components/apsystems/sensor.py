@@ -114,9 +114,12 @@ class ApsystemsSensor(Entity):
         start_time = self.find_start_time(now)
         stop_time = self.find_stop_time(now)
 
-        _LOGGER.debug("Scheduled Start Time / Stop Time / Name: {}, {}, {}".format(as_local(start_time), as_local(stop_time), self._name))
-
-        return True
+        if as_local(start_time) <= now <= as_local(stop_time):
+            _LOGGER.debug("Sensor is running. Start/Stop time: {}, {}".format(as_local(start_time), as_local(stop_time)))
+            return True
+        else:
+            _LOGGER.debug("Sensor is not running. Start/Stop time: {}, {}".format(as_local(start_time), as_local(stop_time)))
+            return False
 
     async def async_update(self):
         """Fetch new state data for the sensor.
