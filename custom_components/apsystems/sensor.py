@@ -141,7 +141,7 @@ class ApsystemsSensor(Entity):
 
         if value == timestamp:  # current attribute is the timestamp, so fix it
             value = int(value) + eleven_hours
-            value = datetime.datetime.fromtimestamp(value / 1000)
+            value = datetime.fromtimestamp(value / 1000)
         timestamp = int(timestamp) + eleven_hours
 
         self._attributes[EXTRA_TIMESTAMP] = timestamp
