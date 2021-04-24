@@ -56,7 +56,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     system_id = config[CONF_SYSTEM_ID]
 
     #data fetcher
-    fetcher = APsystemsFetcher(username, password, system_id)
+    fetcher = APsystemsFetcher(hass, username, password, system_id)
 
     sensors = []
     for type in SENSORS:
@@ -168,13 +168,14 @@ class APsystemsFetcher:
     cache = None
     running = False
 
-    def __init__(self, username, password, system_id):
+    def __init__(self, hass, username, password, system_id):
+        self._hass = hass
         self._username = username
         self._password = password
         self._system_id = system_id
         self._today = datetime.fromisoformat(date.today().isoformat())
 
-    def login(self):
+    async def login(self):
         params = {'today': datetime.today().strftime("%Y-%m-%d+%H:%M:%S"),
                   'username':	self._username,
                   'password':	self._password}
@@ -182,11 +183,13 @@ class APsystemsFetcher:
         session = requests.session()
         session.mount('https://', HTTPAdapter())
 
-        session.request("POST", self.url_login, data=params, headers=self.headers)
+        await self._hass.async_add_executor_job(
+            session.request, "POST", self.url_login, data=params, headers=self.headers
+        )
 
         return session
 
-    def run(self):
+    async def run(self):
         self.running = True
         try:
             session = self.login()
@@ -196,8 +199,11 @@ class APsystemsFetcher:
                       'systemId': self._system_id}
 
             agora = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
-            print('vai rodar: ' + agora)
+            _LOGGER.debug('vai rodar: ' + agora)
             result_data = session.request("POST", self.url_data, data=params, headers=self.headers)
+
+            _LOGGER.debug(result_data.status_code)
+            _LOGGER.debug(result_data.json())
 
             if result_data.status_code == 204:
                 self.cache = None
@@ -212,6 +218,10 @@ class APsystemsFetcher:
 
         if self.cache is None:
             self.run()
+
+        # continue None after run(), there is no data for this day
+        if self.cache is None:
+            return self.cache
 
         # rules to check cache
         eleven_hours = 11 * 60 * 60 * 1000
