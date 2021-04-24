@@ -124,7 +124,6 @@ class ApsystemsSensor(Entity):
         This is the only method that should fetch new data for Home Assistant.
         """
         ap_data = await self._fetcher.data()
-        _LOGGER.debug("Data: "+pprint.pformat(ap_data))
 
         # state is not available
         if ap_data is None:
@@ -210,14 +209,9 @@ class APsystemsFetcher:
 
             _LOGGER.debug("status code data: " + str(result_data.status_code))
 
-            _LOGGER.debug(result_data.request.url)
-            _LOGGER.debug(result_data.request.body)
-            _LOGGER.debug(result_data.request.headers)
-
             if result_data.status_code == 204:
                 self.cache = None
             else:
-                _LOGGER.debug(result_data.json())
                 self.cache = result_data.json()
         finally:
             self.running = False

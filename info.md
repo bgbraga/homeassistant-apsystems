@@ -10,8 +10,10 @@ This component simplifies the integration of a APsystems inverter:
 * have a cache system to avoid all sensors request the same data to apsystemsema.com
 
 ### Minimal Configuration
-```
+```yaml
 sensor:
-- platform: apsystems
-    ip_address: LOCAL_IP_FOR_APSYSTEMS
-```
+  - platform: apsystems
+    username: apsystemsema_user
+    password: !secret apsystems
+    systemId: apsystemsema_system_id
+
