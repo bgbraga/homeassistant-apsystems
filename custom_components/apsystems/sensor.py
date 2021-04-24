@@ -199,8 +199,11 @@ class APsystemsFetcher:
                       'systemId': self._system_id}
 
             agora = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
-            print('vai rodar: ' + agora)
+            _LOGGER.debug('vai rodar: ' + agora)
             result_data = await session.request("POST", self.url_data, data=params, headers=self.headers)
+
+            _LOGGER.debug(result_data.status_code)
+            _LOGGER.debug(result_data.json())
 
             if result_data.status_code == 204:
                 self.cache = None
@@ -215,6 +218,10 @@ class APsystemsFetcher:
 
         if self.cache is None:
             self.run()
+
+        # continue None after run(), there is no data for this day
+        if self.cache is None:
+            return self.cache
 
         # rules to check cache
         eleven_hours = 11 * 60 * 60 * 1000
