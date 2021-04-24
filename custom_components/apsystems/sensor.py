@@ -60,7 +60,6 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     for type in SENSORS:
         metadata = SENSORS[type]
         sensor_name = "sensor." + config.get(CONF_NAME).lower() + "_" + type
-
         sensor = ApsystemsSensor(sensor_name, username, password, system_id, fetcher, metadata)
         sensors.append(sensor)
 
@@ -137,7 +136,8 @@ class ApsystemsSensor(Entity):
         eleven_hours = 11 * 60 * 60 * 1000  # to move apsystems timestamp to UTC
 
         #get timestamp
-        timestamp = ap_data[SENSOR_TIME][-1]
+        index_time = SENSORS[SENSOR_TIME][0]
+        timestamp = ap_data[index_time][-1]
 
         if value == timestamp:  # current attribute is the timestamp, so fix it
             value = int(value) + eleven_hours
