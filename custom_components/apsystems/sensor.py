@@ -184,7 +184,7 @@ class APsystemsFetcher:
         session.mount('https://', HTTPAdapter())
 
         result_login = await self._hass.async_add_executor_job(
-            session.request, "POST", self.url_login, data=params, headers=self.headers
+            session.request, "POST", self.url_login, params, None, self.headers
         )
 
         _LOGGER.debug("status code login: " + str(result_login.status_code))
@@ -203,7 +203,7 @@ class APsystemsFetcher:
             agora = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
             _LOGGER.debug('vai rodar: ' + agora)
             result_data = await self._hass.async_add_executor_job(
-                session.request, "POST", self.url_data, data=params, headers=self.headers
+                session.request, "POST", self.url_data, params, None, self.headers
             )
 
             _LOGGER.debug("status code data: " + str(result_data.status_code))
