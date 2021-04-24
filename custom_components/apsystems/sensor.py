@@ -200,18 +200,20 @@ class APsystemsFetcher:
                       'selectedValue': '216000045871',
                       'systemId': self._system_id}
 
-            agora = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+            _LOGGER.debug(params)
+
+            agora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             _LOGGER.debug('vai rodar: ' + agora)
             result_data = await self._hass.async_add_executor_job(
                 session.request, "POST", self.url_data, params, None, self.headers
             )
 
             _LOGGER.debug("status code data: " + str(result_data.status_code))
-            _LOGGER.debug(result_data.json())
 
             if result_data.status_code == 204:
                 self.cache = None
             else:
+                _LOGGER.debug(result_data.json())
                 self.cache = result_data.json()
         finally:
             self.running = False
