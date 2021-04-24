@@ -38,7 +38,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 # Key: ['json_key', 'unit', 'icon']
 SENSORS = {
-    SENSOR_ENERGY_DAY:  ['day', ENERGY_KILO_WATT_HOUR, 'mdi:solar-power'],
+    SENSOR_ENERGY_DAY:  ['total', ENERGY_KILO_WATT_HOUR, 'mdi:solar-power'],
     SENSOR_ENERGY_LATEST: ['energy', ENERGY_KILO_WATT_HOUR, 'mdi:solar-power'],
     SENSOR_POWER_MAX:     ['max', POWER_WATT, 'mdi:solar-power'],
     SENSOR_POWER_LATEST:  ['power', POWER_WATT, 'mdi:solar-power'],
@@ -166,6 +166,7 @@ class APsystemsFetcher:
     url_data = "https://apsystemsema.com/ema/ajax/getReportApiAjax/getPowerOnCurrentDayAjax"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:52.0) Gecko/20100101 Firefox/52.0'}
     cache = None
+    cache_timestamp = None
     running = False
 
     def __init__(self, hass, username, password, system_id):
@@ -212,6 +213,8 @@ class APsystemsFetcher:
                 self.cache = None
             else:
                 self.cache = result_data.json()
+
+            self.cache_timestamp = int(round(time.time() * 1000))
         finally:
             self.running = False
 
@@ -231,8 +234,9 @@ class APsystemsFetcher:
         timestamp_event = int(self.cache['time'][-1]) + eleven_hours  # apsystems have 8h delayed in timestamp from UTC
         timestamp_now = int(round(time.time() * 1000))
         cache_time = 6 * 60 * 1000  # 6 minutes
+        request_time = 20 * 1000  # 20 seconds to avoid request what is already requested
 
-        if timestamp_now - timestamp_event > cache_time:
+        if (timestamp_now - timestamp_event > cache_time) and (timestamp_now - self.cache_timestamp > request_time):
             await self.run()
 
         return self.cache
