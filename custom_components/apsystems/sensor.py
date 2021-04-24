@@ -175,7 +175,7 @@ class APsystemsFetcher:
         self._system_id = system_id
         self._today = datetime.fromisoformat(date.today().isoformat())
 
-    def login(self):
+    async def login(self):
         params = {'today': datetime.today().strftime("%Y-%m-%d+%H:%M:%S"),
                   'username':	self._username,
                   'password':	self._password}
@@ -183,7 +183,7 @@ class APsystemsFetcher:
         session = requests.session()
         session.mount('https://', HTTPAdapter())
 
-        await self._hass.async_add_executor_job(
+        await self._hass.async_add_executor_job (
             session.request("POST", self.url_login, data=params, headers=self.headers)
         )
 
