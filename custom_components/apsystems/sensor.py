@@ -189,7 +189,7 @@ class APsystemsFetcher:
 
         return session
 
-    def run(self):
+    async def run(self):
         self.running = True
         try:
             session = self.login()
@@ -200,7 +200,7 @@ class APsystemsFetcher:
 
             agora = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
             print('vai rodar: ' + agora)
-            result_data = session.request("POST", self.url_data, data=params, headers=self.headers)
+            result_data = await session.request("POST", self.url_data, data=params, headers=self.headers)
 
             if result_data.status_code == 204:
                 self.cache = None
