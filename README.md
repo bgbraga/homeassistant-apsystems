@@ -11,6 +11,7 @@ This component simplifies the integration of a APsystems inverter:
 * supports any kind of ASsystems inverter or ECU
 * pauses from sunset to sunrise to handle inverter logging going offline at night
 * have a cache system to avoid individual sensors request the same data to apsystemsema.com. It is a great feature for I/O (HTTP) performance.
+* there is a date sensor to identify exactly date/time refers each sensor data
 
 ### URL's Utilised
 The URL called is ``https://apsystemsema.com/ema/ajax/getReportApiAjax/getPowerOnCurrentDayAjax``
