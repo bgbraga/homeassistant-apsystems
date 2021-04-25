@@ -19,7 +19,7 @@ CONF_NAME = 'name'
 SENSOR_ENERGY_DAY = 'energy_day'
 SENSOR_ENERGY_LATEST = 'energy_latest'
 SENSOR_ENERGY_TOTAL = 'energy_total'
-SENSOR_POWER_MAX = 'power_max'
+SENSOR_POWER_MAX = 'power_max_day'
 SENSOR_POWER_LATEST = 'power_latest'
 SENSOR_TIME = 'date'
 
@@ -64,7 +64,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         sensor = ApsystemsSensor(sensor_name, username, password, system_id, fetcher, metadata)
         sensors.append(sensor)
 
-    async_add_entities(sensors)
+    async_add_entities(sensors, True)
 
 class ApsystemsSensor(Entity):
     """Representation of a Sensor."""
