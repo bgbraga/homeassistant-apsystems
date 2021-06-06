@@ -14,7 +14,9 @@ import time
 CONF_USERNAME = 'username'
 CONF_PASSWORD = 'password'
 CONF_SYSTEM_ID = 'systemId'
+CONF_ECU_ID = 'ecuId'
 CONF_NAME = 'name'
+CONF_SUNSET = 'sunset'
 
 SENSOR_ENERGY_DAY = 'energy_day'
 SENSOR_ENERGY_LATEST = 'energy_latest'
@@ -33,7 +35,9 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_USERNAME): cv.string,
     vol.Required(CONF_PASSWORD): cv.string,
     vol.Required(CONF_SYSTEM_ID): cv.string,
-    vol.Optional(CONF_NAME, default='APsystems'): cv.string
+    vol.Required(CONF_ECU_ID): cv.string,
+    vol.Optional(CONF_NAME, default='APsystems'): cv.string,
+    vol.Optional(CONF_SUNSET, default='off'): cv.string
 })
 
 # Key: ['json_key', 'unit', 'icon']
@@ -53,15 +57,17 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     username = config[CONF_USERNAME]
     password = config[CONF_PASSWORD]
     system_id = config[CONF_SYSTEM_ID]
+    ecu_id = config[CONF_ECU_ID]
+    sunset = config[CONF_SUNSET]
 
     #data fetcher
-    fetcher = APsystemsFetcher(hass, username, password, system_id)
+    fetcher = APsystemsFetcher(hass, username, password, system_id, ecu_id)
 
     sensors = []
     for type in SENSORS:
         metadata = SENSORS[type]
         sensor_name = config.get(CONF_NAME).lower() + "_" + type
-        sensor = ApsystemsSensor(sensor_name, username, password, system_id, fetcher, metadata)
+        sensor = ApsystemsSensor(sensor_name, username, password, system_id, sunset, fetcher, metadata)
         sensors.append(sensor)
 
     async_add_entities(sensors, True)
@@ -69,13 +75,14 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 class ApsystemsSensor(Entity):
     """Representation of a Sensor."""
 
-    def __init__(self, sensor_name, username, password, system_id, fetcher, metadata):
+    def __init__(self, sensor_name, username, password, system_id, sunset, fetcher, metadata):
         """Initialize the sensor."""
         self._state = None
         self._name = sensor_name
         self._username = username
         self._password = password
         self._system_id = system_id
+        self._sunset = sunset
         self._fetcher = fetcher
         self._metadata = metadata
         self._attributes = {}
@@ -107,6 +114,10 @@ class ApsystemsSensor(Entity):
 
     @property
     def available(self, utc_now=None):
+        if self._sunset == "off":
+            _LOGGER.debug("Sensor is running. Sunset is disabled")
+            return True
+
         if utc_now is None:
             utc_now = dt_utcnow()
         now = as_local(utc_now)
@@ -176,11 +187,12 @@ class APsystemsFetcher:
     cache_timestamp = None
     running = False
 
-    def __init__(self, hass, username, password, system_id):
+    def __init__(self, hass, username, password, system_id, ecu_id):
         self._hass = hass
         self._username = username
         self._password = password
         self._system_id = system_id
+        self._ecu_id = ecu_id
         self._today = datetime.fromisoformat(date.today().isoformat())
 
     async def login(self):
@@ -205,11 +217,11 @@ class APsystemsFetcher:
             session = await self.login()
 
             post_data = {'queryDate': datetime.today().strftime("%Y%m%d"),
-                      'selectedValue': '216000045871',
+                      'selectedValue': self._ecu_id,
                       'systemId': self._system_id}
 
             agora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            _LOGGER.debug('vai rodar: ' + agora)
+            _LOGGER.debug('starting: ' + agora)
             result_data = await self._hass.async_add_executor_job(
                 session.request, "POST", self.url_data, None, post_data, self.headers
             )
