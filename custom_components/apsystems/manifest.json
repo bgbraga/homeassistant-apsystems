@@ -4,6 +4,6 @@
   "documentation": "https://github.com/bgbraga/homeassistant-apsystems/blob/master/README.md",
   "dependencies": [],
   "codeowners": ["@bgbraga"],
-  "requirements": ["mechanize==0.4.5"],
+  "requirements": ["git+https://github.com/python-mechanize/mechanize.git==0.4.5"],
   "version": "1.0.2"
 }
