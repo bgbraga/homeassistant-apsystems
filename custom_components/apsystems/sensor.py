@@ -10,6 +10,7 @@ import asyncio
 from requests.adapters import HTTPAdapter
 from datetime import datetime, timedelta, date
 import time
+import mechanize
 
 CONF_USERNAME = 'username'
 CONF_PASSWORD = 'password'
@@ -196,25 +197,23 @@ class APsystemsFetcher:
         self._today = datetime.fromisoformat(date.today().isoformat())
 
     async def login(self):
-        post_data = {'today': datetime.today().strftime("%Y-%m-%d+%H:%M:%S"),
-                  'username':	self._username,
-                  'password':	self._password}
+        browser = mechanize.Browser()
+        browser.open(self.url_login)
+        browser.select_form(nr=0)
+        browser.form.set_all_readonly(False)
+        browser.form['username'] = self._username
+        browser.form['password'] = self._password
 
-        session = requests.session()
-        session.mount('https://', HTTPAdapter())
-
-        result_login = await self._hass.async_add_executor_job(
-            session.request, "POST", self.url_login, None, post_data, self.headers
+        await self._hass.async_add_executor_job(
+            browser.submit
         )
 
-        _LOGGER.debug("status code login: " + str(result_login.status_code))
-
-        return session
+        return browser
 
     async def run(self):
         self.running = True
         try:
-            session = await self.login()
+            browser = await self.login()
 
             post_data = {'queryDate': datetime.today().strftime("%Y%m%d"),
                       'selectedValue': self._ecu_id,
@@ -226,7 +225,7 @@ class APsystemsFetcher:
             now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             _LOGGER.debug('starting: ' + now)
             result_data = await self._hass.async_add_executor_job(
-                session.request, "POST", self.url_data, None, post_data, self.headers
+                requests.post, self.url_data, post_data, None, self.headers, browser.cookiejar
             )
 
             _LOGGER.debug("status code data: " + str(result_data.status_code))
