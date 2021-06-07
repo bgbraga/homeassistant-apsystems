@@ -229,8 +229,9 @@ class APsystemsFetcher:
 
             now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             _LOGGER.debug('starting: ' + now)
+            session = requests.sessions.session()
             result_data = await self._hass.async_add_executor_job(
-                self.post, post_data, browser.cookiejar
+                session.request, "POST", self.url_data, None, post_data, self.headers, browser.cookiejar
             )
 
             _LOGGER.debug("status code data: " + str(result_data.status_code))
@@ -244,11 +245,6 @@ class APsystemsFetcher:
             self.cache_timestamp = int(round(time.time() * 1000))
         finally:
             self.running = False
-
-    async def post(self, params, cookies):
-        result = requests.post(self.url_data, data=params, headers=self.headers, cookies=cookies)
-
-        return result
 
     async def data(self):
         while self.running is True:
