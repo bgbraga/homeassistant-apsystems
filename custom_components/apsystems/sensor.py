@@ -116,8 +116,9 @@ class ApsystemsSensor(Entity):
     @property
     def available(self, utc_now=None):
         _LOGGER.debug("Sunset variable: "+self._sunset)
+        _LOGGER.debug("Type: " + type(self._sunset))
 
-        if not self._sunset:
+        if self._sunset == 'False':
             _LOGGER.debug("Sensor is running. Sunset is disabled")
             return True
 
