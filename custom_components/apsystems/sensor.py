@@ -116,7 +116,6 @@ class ApsystemsSensor(Entity):
     @property
     def available(self, utc_now=None):
         _LOGGER.debug("Sunset variable: "+self._sunset)
-        _LOGGER.debug(type(self._sunset))
 
         if self._sunset == 'False':
             _LOGGER.debug("Sensor is running. Sunset is disabled")
@@ -201,7 +200,10 @@ class APsystemsFetcher:
 
     async def login(self):
         browser = mechanize.Browser()
-        browser.open(self.url_login)
+
+        await self._hass.async_add_executor_job(
+            browser.open, self.url_login
+        )
         browser.select_form(nr=0)
         browser.form.set_all_readonly(False)
         browser.form['username'] = self._username
