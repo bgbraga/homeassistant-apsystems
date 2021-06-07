@@ -235,7 +235,6 @@ class APsystemsFetcher:
             )
 
             _LOGGER.debug("status code data: " + str(result_data.status_code))
-            _LOGGER.debug(result_data)
 
             if result_data.status_code == 204:
                 self.cache = None
