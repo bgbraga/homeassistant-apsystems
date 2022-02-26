@@ -183,7 +183,7 @@ class ApsystemsSensor(Entity):
 
 
 class APsystemsFetcher:
-    url_login = "https://apsystemsema.com/ema/loginEMA.action"
+    url_login = "https://apsystemsema.com/ema/index.action"
     url_data = "https://apsystemsema.com/ema/ajax/getReportApiAjax/getPowerOnCurrentDayAjax"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:52.0) Gecko/20100101 Firefox/52.0'}
     cache = None
